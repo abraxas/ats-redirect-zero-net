@@ -1,0 +1,86 @@
+name: ats-redirect-zero-net
+
+services:
+  ats:
+    image: ats-10.2.0-lab:local
+    pull_policy: never
+    init: true
+    restart: "no"
+    ports:
+      - "127.0.0.1:18790:8080"
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_nonlocal_bind=1
+    environment:
+      ATS_ROOT: /opt/ats
+      LD_LIBRARY_PATH: /opt/ats/lib:/usr/local/trafficserver/lib
+    volumes:
+      - ./records.yaml:/opt/ats/etc/trafficserver/records.yaml:ro
+      - ./remap.config:/opt/ats/etc/trafficserver/remap.config:ro
+      - ./storage.config:/opt/ats/etc/trafficserver/storage.config:ro
+      - ./records.yaml:/usr/local/trafficserver/etc/trafficserver/records.yaml:ro
+      - ./remap.config:/usr/local/trafficserver/etc/trafficserver/remap.config:ro
+      - ./storage.config:/usr/local/trafficserver/etc/trafficserver/storage.config:ro
+    depends_on:
+      - origin-a
+      - origin-b
+      - origin-c
+      - origin-any
+
+  witness:
+    build:
+      context: .
+      dockerfile: Dockerfile.witness
+    image: ats-redirect-zero-net-witness:local
+    network_mode: "service:ats"
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - ats
+    environment:
+      MODE: witness
+      WITNESS: ATS-REDIRECT-ZERO-NET-WITNESS
+      LOOPBACK_SECRET: LOOPBACK-ONLY-SECRET
+      FOLLOW_OK: FOLLOW-OK
+      PYTHONUNBUFFERED: "1"
+
+  origin-a:
+    image: python:3.12-slim
+    volumes:
+      - ./stub.py:/lab/stub.py:ro
+    environment:
+      MODE: origin-a
+      ZERO_NET_URL: http://0.0.0.1:18080/w
+      PYTHONUNBUFFERED: "1"
+    command: ["python3", "/lab/stub.py"]
+
+  origin-b:
+    image: python:3.12-slim
+    volumes:
+      - ./stub.py:/lab/stub.py:ro
+    environment:
+      MODE: origin-b
+      LOOPBACK_URL: http://127.0.0.1:18080/loop
+      PYTHONUNBUFFERED: "1"
+    command: ["python3", "/lab/stub.py"]
+
+  origin-c:
+    image: python:3.12-slim
+    volumes:
+      - ./stub.py:/lab/stub.py:ro
+    environment:
+      MODE: origin-c
+      ROUTABLE_URL: http://203.0.113.10:18080/ok
+      PYTHONUNBUFFERED: "1"
+    command: ["python3", "/lab/stub.py"]
+
+  origin-any:
+    image: python:3.12-slim
+    volumes:
+      - ./stub.py:/lab/stub.py:ro
+    environment:
+      MODE: origin-any
+      ANY_URL: http://0.0.0.0:18080/any
+      PYTHONUNBUFFERED: "1"
+    command: ["python3", "/lab/stub.py"]
