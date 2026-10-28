@@ -13,6 +13,10 @@
   &nbsp;·&nbsp;
   <a href="https://github.com/abraxas/ats-redirect-zero-net">ats-redirect-zero-net</a>
 </p>
+<p align="center">
+  Write-up: <a href="https://abraxaslabs.tech/research/ats-redirect-zero-net"><strong>https://abraxaslabs.tech/research/ats-redirect-zero-net</strong></a>
+</p>
+
 
 # ats-redirect-zero-net
 
